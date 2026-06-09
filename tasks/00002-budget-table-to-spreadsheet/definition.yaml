@@ -1,0 +1,136 @@
+id: 00002-budget-table-to-spreadsheet
+start_url: "http://cua_email.web"
+prompt: |
+  You have two apps available:
+  - Outlook-style email at http://cua_email.web (active session: user_0001)
+  - Excel-style spreadsheet at http://cua_spreadsheet.web (blank workbook)
+
+  Find the email with subject "Budget Proposal - Q2". It lists four
+  budget categories with amounts. Recreate that table in the spreadsheet
+  exactly:
+
+  - A1: "Category", B1: "Amount" (these are the headers)
+  - A2: "Personnel",  B2: 250000
+  - A3: "Technology", B3: 75000
+  - A4: "Marketing",  B4: 50000
+  - A5: "Operations", B5: 30000
+  - A6: "Total",      B6: =SUM(B2:B5)
+
+  Use the actual SUM formula in B6 — do NOT type the number 405000
+  directly. Do not modify the email. Do not add any cells beyond
+  A1:B6.
+
+available_tools:
+  - browser_*
+
+rewards:
+  - name: "Took screenshot"
+    kind: action
+    weight: 0.05
+    tool: browser_screenshot
+
+  - name: "Header row A1 + B1"
+    kind: state
+    weight: 0.15
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: A1_header
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "A1"
+              after:
+                value: "Category"
+      - name: B1_header
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B1"
+              after:
+                value: "Amount"
+
+  - name: "Four category rows populated"
+    kind: state
+    weight: 0.40
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: personnel
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B2"
+              after:
+                computedValue: 250000
+      - name: technology
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B3"
+              after:
+                computedValue: 75000
+      - name: marketing
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B4"
+              after:
+                computedValue: 50000
+      - name: operations
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B5"
+              after:
+                computedValue: 30000
+
+  - name: "B6 uses SUM formula (not typed number)"
+    kind: state
+    weight: 0.30
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: b6_is_formula
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B6"
+              after:
+                value: "=SUM(B2:B5)"
+                computedValue: 405000
+
+  - name: "Email not modified"
+    kind: state
+    weight: 0.10
+    source:
+      query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND subject='Budget Proposal - Q2' AND folderId='folder_inbox_user_0001'"
+    assertions:
+      - name: budget_email_still_in_inbox
+        path: "$[0].n"
+        operator: NUMERIC_MATCH
+        expected: "== 1"
+
+metadata:
+  environment: outlook-excel
+  difficulty: hard

@@ -1,0 +1,89 @@
+id: 00004-move-to-finance-and-log
+start_url: "http://cua_email.web"
+prompt: |
+  You have two apps available:
+  - Outlook-style email at http://cua_email.web (active session: user_0001)
+  - Excel-style spreadsheet at http://cua_spreadsheet.web (blank workbook)
+
+  Two-step task that touches BOTH apps:
+
+  1. In email: find the Vendor Billing invoice (subject "Invoice #2024-001")
+     and move it from Inbox to the Finance folder. Do not delete or
+     archive — move specifically into Finance.
+
+  2. In spreadsheet: log the action in two cells.
+     - A1: "Moved to Finance"
+     - B1: "Invoice #2024-001"
+
+  Do not move any other emails. Do not add cells beyond A1 and B1.
+
+available_tools:
+  - browser_*
+
+rewards:
+  - name: "Took screenshot"
+    kind: action
+    weight: 0.05
+    tool: browser_screenshot
+
+  - name: "Invoice moved to Finance folder"
+    kind: state
+    weight: 0.45
+    source:
+      query: "SELECT folderId FROM emails WHERE userId='user_0001' AND fromName='Vendor Billing' AND subject='Invoice #2024-001'"
+    assertions:
+      - name: invoice_in_finance
+        path: "$[0].folderId"
+        operator: STRING_EQUALS
+        expected: "folder_custom_finance_user_0001"
+
+  - name: "A1 contains 'Moved to Finance'"
+    kind: state
+    weight: 0.20
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: A1_label
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "A1"
+              after:
+                value: "Moved to Finance"
+
+  - name: "B1 contains invoice identifier"
+    kind: state
+    weight: 0.20
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B1_invoice
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B1"
+              after:
+                value: "Invoice #2024-001"
+
+  - name: "No other emails moved out of Inbox"
+    kind: state
+    weight: 0.10
+    source:
+      query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND folderId='folder_inbox_user_0001'"
+    assertions:
+      - name: inbox_count_minus_1
+        path: "$[0].n"
+        operator: NUMERIC_MATCH
+        expected: ">= 30"
+
+metadata:
+  environment: outlook-excel
+  difficulty: hard

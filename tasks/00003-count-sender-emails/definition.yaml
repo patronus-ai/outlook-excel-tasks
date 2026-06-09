@@ -1,0 +1,169 @@
+id: 00003-count-sender-emails
+start_url: "http://cua_email.web"
+prompt: |
+  You have two apps available:
+  - Outlook-style email at http://cua_email.web (active session: user_0001)
+  - Excel-style spreadsheet at http://cua_spreadsheet.web (blank workbook)
+
+  You need to build a sender-frequency report. Count emails in the
+  INBOX folder ONLY (not Archive, Trash, Finance, Projects, or any
+  other folder) for three specific senders, plus the inbox total,
+  plus a ratio formula.
+
+  Spreadsheet layout:
+
+  - A1: "Sender"        B1: "Inbox count"
+  - A2: "Omar Hassan"   B2: count of Omar Hassan's emails in Inbox
+  - A3: "Sarah Johnson" B3: count of Sarah Johnson's emails in Inbox
+  - A4: "Carlos Mendez" B4: count of Carlos Mendez's emails in Inbox
+  - A5: "All inbox"     B5: total count of all emails in Inbox
+  - A6: "Top sender %"  B6: a FORMULA = MAX(B2:B4) / B5 * 100
+                        (use the actual formula, do NOT type the
+                        computed percentage)
+
+  Constraints:
+  - Sender names must match exactly (e.g. "Sarah Johnson", not "Sara").
+  - Counts must be exact integers from the Inbox folder.
+  - B6 must be a formula whose computed result is the ratio.
+  - Do not modify any emails. Do not add cells beyond A1:B6.
+
+available_tools:
+  - browser_*
+
+rewards:
+  - name: "Took screenshot"
+    kind: action
+    weight: 0.05
+    tool: browser_screenshot
+
+  - name: "Header row"
+    kind: state
+    weight: 0.10
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: A1_header
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "A1"
+              after:
+                value: "Sender"
+      - name: B1_header
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B1"
+              after:
+                value: "Inbox count"
+
+  - name: "B2 = Omar Hassan count (3)"
+    kind: state
+    weight: 0.15
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B2_count
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B2"
+              after:
+                computedValue: 3
+
+  - name: "B3 = Sarah Johnson count (2)"
+    kind: state
+    weight: 0.15
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B3_count
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B3"
+              after:
+                computedValue: 2
+
+  - name: "B4 = Carlos Mendez count (1)"
+    kind: state
+    weight: 0.15
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B4_count
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B4"
+              after:
+                computedValue: 1
+
+  - name: "B5 = All inbox total (25)"
+    kind: state
+    weight: 0.15
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B5_total
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B5"
+              after:
+                computedValue: 25
+
+  - name: "B6 = formula result 12.0 (3/25*100)"
+    kind: state
+    weight: 0.20
+    source:
+      type: diff
+      url: "http://cua_spreadsheet.web/api/state"
+      method: GET
+    assertions:
+      - name: B6_formula_result
+        operator: JSON_CONTAINS
+        expected:
+          deltas:
+            - operation: "add"
+              entity_type: "cell"
+              entity_id: "B6"
+              after:
+                computedValue: 12
+
+  - name: "Emails not moved"
+    kind: state
+    weight: 0.05
+    source:
+      query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND folderId='folder_inbox_user_0001'"
+    assertions:
+      - name: inbox_unchanged
+        path: "$[0].n"
+        operator: NUMERIC_MATCH
+        expected: "== 25"
+
+metadata:
+  environment: outlook-excel
+  difficulty: hard
