@@ -1,0 +1,105 @@
+id: 00002-count-omar-emails
+start_url: http://cua_email.web
+prompt: |
+  Two-app task: count specific emails in the inbox and record the
+  count in the spreadsheet.
+
+  Step 1 — Email login (required first visit):
+  Navigate to http://cua_email.web and log in as "user_0001"
+  (single User ID input, then click "Create Session").
+
+  Step 2 — Count emails in inbox from "Omar Hassan":
+  In the inbox list, count how many emails the sender "Omar Hassan"
+  has sent. The sender name is visible directly in the inbox row;
+  you do NOT need to open the email body. Scroll the inbox as
+  needed to see all emails. Count ONLY emails currently in the
+  Inbox folder — ignore any other folder.
+
+  Step 3 — Record in spreadsheet:
+  Navigate to http://cua_spreadsheet.web. Click cells, type values,
+  press Enter to commit:
+
+  - A1: "Sender"        B1: "Omar Hassan"
+  - A2: "Inbox count"   B2: the integer count (just the number)
+
+  Constraints:
+  - Match exact text for A1, A2, B1 (no quotes, no extra spaces).
+  - B2 is the integer count of Omar Hassan's emails in the Inbox.
+  - Do not modify any emails.
+  - Do NOT navigate to /docs, /api/, /openapi, /swagger.
+
+available_tools:
+- browser_*
+
+rewards:
+- name: Took screenshot
+  kind: action
+  weight: 0.05
+  tool: browser_screenshot
+
+- name: A1 = "Sender"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Sender'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a1
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: B1 = "Omar Hassan"
+  kind: state
+  weight: 0.20
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=1 AND raw_value='Omar Hassan'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: b1
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: A2 = "Inbox count"
+  kind: state
+  weight: 0.15
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Inbox count'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a2
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: B2 = Omar Hassan inbox count (1-10 plausible)
+  kind: state
+  weight: 0.45
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=1 AND col_index=1
+        AND CAST(COALESCE(NULLIF(raw_value,''), computed_value) AS INTEGER) BETWEEN 1 AND 10
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: b2_count
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: Omar's emails in inbox unchanged
+  kind: state
+  weight: 0.05
+  source:
+    query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND fromName='Omar Hassan' AND folderId='folder_inbox_user_0001'"
+    db_path: /opt/patronus-gym/apps/cua_email/src/db/seed.sqlite
+  assertions:
+  - name: omar_inbox_unchanged
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: "== 3"
+
+metadata:
+  environment: outlook-excel
+  difficulty: medium-hard

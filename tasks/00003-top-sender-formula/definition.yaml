@@ -1,0 +1,139 @@
+id: 00003-top-sender-formula
+start_url: http://cua_email.web
+prompt: |
+  Two-app task: count emails for two senders in the inbox and
+  build a small total with a SUM formula.
+
+  Step 1 — Email login:
+  Navigate to http://cua_email.web. Log in as "user_0001" (single
+  User ID input, then click "Create Session").
+
+  Step 2 — Count two senders in inbox:
+  Scroll through the Inbox folder and count emails from each of
+  these senders. The sender name is visible in the inbox list row;
+  you do not need to open emails.
+
+  - "Omar Hassan"
+  - "Laura Stein"
+
+  Count ONLY emails currently in the Inbox folder.
+
+  Step 3 — Build a small table in the spreadsheet:
+  Navigate to http://cua_spreadsheet.web. Enter the following:
+
+  - A1: "Sender"          B1: "Count"
+  - A2: "Omar Hassan"     B2: integer count for Omar Hassan
+  - A3: "Laura Stein"     B3: integer count for Laura Stein
+  - A4: "Total"           B4: a SUM formula =SUM(B2:B3)
+                          (B4 MUST be the actual formula, not a
+                          typed number — start the cell with "=")
+
+  Constraints:
+  - Exact text match for A column labels and B1.
+  - B2 and B3 are integers in the range 1-10.
+  - B4 must be a formula referencing B2:B3.
+  - Do not modify any emails.
+  - Do NOT navigate to /docs, /api/, /openapi, /swagger.
+
+available_tools:
+- browser_*
+
+rewards:
+- name: Took screenshot
+  kind: action
+  weight: 0.05
+  tool: browser_screenshot
+
+- name: Header row "Sender" + "Count"
+  kind: state
+  weight: 0.10
+  source:
+    query: |
+      SELECT
+        SUM(CASE WHEN row_index=0 AND col_index=0 AND raw_value='Sender' THEN 1 ELSE 0 END) AS a1,
+        SUM(CASE WHEN row_index=0 AND col_index=1 AND raw_value='Count'  THEN 1 ELSE 0 END) AS b1
+      FROM cells
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a1
+    path: "$[0].a1"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+  - name: b1
+    path: "$[0].b1"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: B2 is a small integer
+  kind: state
+  weight: 0.20
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=1 AND col_index=1
+        AND CAST(COALESCE(NULLIF(raw_value,''), computed_value) AS INTEGER) BETWEEN 1 AND 10
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: b2
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: B3 is a small integer
+  kind: state
+  weight: 0.20
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=2 AND col_index=1
+        AND CAST(COALESCE(NULLIF(raw_value,''), computed_value) AS INTEGER) BETWEEN 1 AND 10
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: b3
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: B4 uses a SUM formula
+  kind: state
+  weight: 0.35
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=3 AND col_index=1
+        AND formula IS NOT NULL AND formula != ''
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: b4_formula
+    path: "$[0].n"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+- name: A column labels
+  kind: state
+  weight: 0.10
+  source:
+    query: |
+      SELECT
+        SUM(CASE WHEN row_index=1 AND col_index=0 AND raw_value='Omar Hassan'  THEN 1 ELSE 0 END) AS a2,
+        SUM(CASE WHEN row_index=2 AND col_index=0 AND raw_value='Laura Stein'  THEN 1 ELSE 0 END) AS a3,
+        SUM(CASE WHEN row_index=3 AND col_index=0 AND raw_value='Total'        THEN 1 ELSE 0 END) AS a4
+      FROM cells
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a2
+    path: "$[0].a2"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+  - name: a3
+    path: "$[0].a3"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+  - name: a4
+    path: "$[0].a4"
+    operator: NUMERIC_MATCH
+    expected: ">= 1"
+
+metadata:
+  environment: outlook-excel
+  difficulty: hard

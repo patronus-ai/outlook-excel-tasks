@@ -1,0 +1,131 @@
+id: 00005-inbox-summary-formula
+start_url: http://cua_email.web
+prompt: |
+  Two-app task: count emails by basic categories in the inbox and
+  build a small summary with a ratio formula.
+
+  Step 1 — Email login:
+  Navigate to http://cua_email.web and log in as "user_0001"
+  (single User ID input, then "Create Session").
+
+  Step 2 — Count emails in inbox:
+  Scroll through the Inbox folder and count:
+  - the TOTAL number of emails in the Inbox (not other folders)
+  - how many of them are unread (their row shows visually as
+    unread: typically bold sender/subject, no "open" indicator)
+
+  Step 3 — Record in spreadsheet:
+  Navigate to http://cua_spreadsheet.web and enter:
+
+  - A1: "Total inbox"     B1: integer — total inbox emails
+  - A2: "Unread"          B2: integer — unread count
+  - A3: "Read %"          B3: a FORMULA computing read percentage
+                          as (B1-B2)/B1*100. B3 MUST be a formula
+                          that starts with "=" (not a typed number).
+
+  Constraints:
+  - Match exact text for A1, A2, A3.
+  - B1 and B2 must be integers.
+  - B3 must be a formula. Its computed value will be checked.
+  - Do not modify any emails (no read/unread toggling).
+  - Do NOT navigate to /docs, /api/, /openapi, /swagger.
+
+available_tools:
+- browser_*
+
+rewards:
+- name: Took screenshot
+  kind: action
+  weight: 0.05
+  tool: browser_screenshot
+
+- name: A1 = "Total inbox"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Total inbox'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a1
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B1 = inbox count (5-30 plausible)
+  kind: state
+  weight: 0.20
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=0 AND col_index=1
+        AND CAST(COALESCE(NULLIF(raw_value,''), computed_value) AS INTEGER) BETWEEN 5 AND 30
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b1
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: A2 = "Unread"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Unread'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a2
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B2 is an integer (unread count)
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=1 AND raw_value GLOB '[0-9]*'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b2
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: A3 = "Read %"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=2 AND col_index=0 AND raw_value='Read %'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a3
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B3 uses a formula
+  kind: state
+  weight: 0.40
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=2 AND col_index=1 AND formula IS NOT NULL AND formula != ''"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b3_is_formula
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: Inbox unchanged
+  kind: state
+  weight: 0.05
+  source:
+    query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND folderId='folder_inbox_user_0001'"
+    db_path: /opt/patronus-gym/apps/cua_email/src/db/seed.sqlite
+  assertions:
+    - name: inbox_count
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: "== 25"
+
+metadata:
+  environment: outlook-excel
+  difficulty: hard

@@ -1,0 +1,133 @@
+id: 00004-vendor-billing-record
+start_url: http://cua_email.web
+prompt: |
+  Two-app task: find a specific email by sender and record its
+  metadata in the spreadsheet.
+
+  Step 1 — Email login:
+  Navigate to http://cua_email.web and log in as "user_0001"
+  (single User ID input, then "Create Session").
+
+  Step 2 — Find the Vendor Billing email:
+  In the Inbox folder, locate the email from sender "Vendor Billing".
+  Read these visible fields directly from the inbox row (do NOT
+  open the body):
+  - the subject of that email
+  - whether the email appears Read or Unread (unread rows are
+    typically bold)
+
+  Step 3 — Record in spreadsheet:
+  Navigate to http://cua_spreadsheet.web and enter:
+
+  - A1: "Sender"          B1: "Vendor Billing"
+  - A2: "Subject"         B2: the subject visible in the inbox row
+  - A3: "Has number?"     B3: "Yes"   (the subject contains a
+                                       digit such as "2024-001")
+
+  Constraints:
+  - Match A1, A2, A3 labels exactly.
+  - B1 must be exactly "Vendor Billing".
+  - B2 should contain the invoice number — anything starting with
+    "Invoice" or containing "2024" is acceptable.
+  - Do not modify any emails.
+  - Do NOT navigate to /docs, /api/, /openapi, /swagger.
+
+available_tools:
+- browser_*
+
+rewards:
+- name: Took screenshot
+  kind: action
+  weight: 0.05
+  tool: browser_screenshot
+
+- name: A1 = "Sender"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Sender'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a1
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B1 = "Vendor Billing"
+  kind: state
+  weight: 0.25
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=1 AND raw_value='Vendor Billing'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b1
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: A2 = "Subject"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Subject'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a2
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B2 contains invoice identifier
+  kind: state
+  weight: 0.25
+  source:
+    query: |
+      SELECT COUNT(*) AS n FROM cells
+      WHERE row_index=1 AND col_index=1
+        AND (raw_value LIKE '%Invoice%' OR raw_value LIKE '%2024%')
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b2_subject
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: A3 = "Has number?"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=2 AND col_index=0 AND raw_value='Has number?'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: a3
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: B3 = "Yes"
+  kind: state
+  weight: 0.10
+  source:
+    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=2 AND col_index=1 AND raw_value='Yes'"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+    - name: b3
+      path: $[0].n
+      operator: NUMERIC_MATCH
+      expected: ">= 1"
+
+- name: Email unchanged
+  kind: state
+  weight: 0.05
+  source:
+    query: "SELECT folderId FROM emails WHERE userId='user_0001' AND fromName='Vendor Billing'"
+    db_path: /opt/patronus-gym/apps/cua_email/src/db/seed.sqlite
+  assertions:
+    - name: vb_in_inbox
+      path: $[0].folderId
+      operator: STRING_EQUALS
+      expected: folder_inbox_user_0001
+
+metadata:
+  environment: outlook-excel
+  difficulty: medium
