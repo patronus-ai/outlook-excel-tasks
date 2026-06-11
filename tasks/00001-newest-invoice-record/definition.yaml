@@ -1,23 +1,13 @@
 id: 00001-newest-invoice-record
 start_url: http://cua_email.web
-prompt: "Two-app task: find the invoice email in inbox, then record three\npieces of basic metadata in the spreadsheet.\n\n\
-  Step 1 — Email login (required first visit):\nNavigate to http://cua_email.web. The landing page is a single\nUser ID form.\
-  \ Type \"user_0001\" and click \"Create Session\" to\nenter the inbox.\n\nStep 2 — Find the invoice in inbox:\nIn the inbox\
-  \ list, locate the email from \"Vendor Billing\" with\nsubject \"Invoice #2024-001\". You do NOT need to open the email\n\
-  body — everything you need (sender name and subject) is visible\ndirectly in the inbox list row.\n\nStep 3 — Record in spreadsheet:\n\
-  Navigate to http://cua_spreadsheet.web. The workbook \"Book 1\"\nis already open with an empty \"Sheet1\". Click the cells\
-  \ and\ntype the values, pressing Enter to commit each:\n\n- A1: \"Sender\"           B1: \"Vendor Billing\"\n- A2: \"Subject\"\
-  \          B2: \"Invoice #2024-001\"\n- A3: \"Folder\"           B3: \"Inbox\"\n- A4: \"Year\"             B4: 2024   (extract\
-  \ the year from the\n                                     invoice number \"#2024-001\")\n- A5: \"Invoice no\"        B5:\
-  \ \"2024-001\"  (the part after the # in\n                                     the invoice number)\n\nConstraints:\n- Match\
-  \ the exact text for B1, B2, B3 (no extra spaces, no quotes).\n- B4 must be the integer 2024.\n- Do not modify any emails\
-  \ (do not flag, archive, delete, open).\n- Use ONLY the standard email UI. Do not navigate to /docs, /api/,\n  /openapi,\
-  \ /swagger or any developer documentation pages.\n\n  Efficiency tips (you have limited steps — be fast):\n  - Find the\
-  \ email fast: use the inbox Search box (magnifier icon at the\n    top), type the sender's name, open the matching row.\
-  \ Don't scroll.\n  - Fill ALL spreadsheet cells in ONE action: click cell A1 once, then\n    type the whole 2-column table\
-  \ as a single block using a Tab between\n    the two columns and Enter at the end of each row. Example of a single\n   \
-  \ typed value: \"Sender<TAB>...<ENTER>Subject<TAB>...<ENTER>...\" — this\n    populates A1,B1,A2,B2,... in one go. This\
-  \ is far faster and more\n    reliable than editing cells one at a time.\n"
+prompt: |
+  You're keeping a small log of incoming invoices in a spreadsheet.
+
+  Open the email app at http://cua_email.web and sign in as user_0001 (enter the user id and create the session). Find the invoice from Vendor Billing with the subject "Invoice #2024-001" — searching the inbox for the sender is the quickest way to find it. You can read everything you need straight from the inbox row, so there's no need to open the message, and please leave the emails untouched.
+
+  Then switch to the spreadsheet at http://cua_spreadsheet.web (the "Book 1" workbook is already open) and record the invoice as a two-column table. Down column A put the labels Sender, Subject, Folder, Year and Invoice no; in column B put the matching values — Vendor Billing, the subject "Invoice #2024-001", the folder Inbox, the year taken from the invoice number (2024), and the part after the # (2024-001). Match the text exactly.
+
+  The quickest way to fill it in is to click A1 and type the whole table in one go, tabbing between the two columns and pressing Enter at the end of each row, rather than editing the cells one by one.
 available_tools:
 - browser_*
 rewards:

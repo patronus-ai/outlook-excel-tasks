@@ -14,19 +14,23 @@ Target model: **Claude Opus 4.8**. Target pass-rate band: **10–50%**
 (client requirement: harder than current — the agent succeeds
 sometimes but not consistently).
 
-## Tasks — pass-rate (measured June 11)
+## Tasks — pass-rate
 
 5 cross-app tasks, all following the same pattern: **find one specific
 email in the inbox (by sender + subject) and record its metadata in the
-spreadsheet**. Pass-rates aggregated across multiple batches with
-`max_turns=51`, `workers=1`, visual mode.
+spreadsheet**. Each task is a 5-cell, two-column table.
+
+Prompts are written as **natural-language prose** (no step-by-step
+checklists or bullet specs) — they read like instructions you'd give a
+person, while still naming the exact cell labels and values the grader
+checks. Pass-rates were measured with `max_turns=51`, visual mode.
 
 | ID (task `id:`) | Cells | Pass-rate | Band 10–50% |
 |-----------------|------:|----------:|:-----------:|
-| **00001-newest-invoice-record** | 5 | **4/10 = 40%** | ✅ IN |
-| **00002-david-kim-lunch-record** | 5 | **4/10 = 40%** | ✅ IN |
-| **00003-design-review-record** | 4 | **4/10 = 40%** | ✅ IN |
-| **00004-marketing-campaign-record** | 5 | **1/10 = 10%** | ✅ IN |
+| **00001-newest-invoice-record** | 5 | **1/5 = 20%** | ✅ IN |
+| **00002-david-kim-lunch-record** | 5 | **2/5 = 40%** | ✅ IN |
+| **00003-design-review-record** | 5 | **1/8 = 12.5%** | ✅ IN |
+| **00004-marketing-campaign-record** | 5 | **1/8 = 12.5%** | ✅ IN |
 | **00005-incident-retro-record** | 5 | **2/8 = 25%** | ✅ IN |
 
 **All 5 tasks are CONFIRMED IN BAND** for Claude Opus 4.8.
@@ -49,9 +53,9 @@ Each task forces the agent to use **both** apps:
    body or modify any email).
 3. Navigate to `cua_spreadsheet.web` (workbook "Book 1" is pre-seeded
    with an empty Sheet1).
-4. Record the email's metadata across 4–5 labelled cells (Sender,
-   Subject, Folder, plus 1–2 derived fields such as Year, Month, Day,
-   Topic, DocType).
+4. Record the email's metadata across 5 labelled cells (Sender, Subject,
+   Folder, plus 2 derived fields such as Year, Month, Day, Topic,
+   DocType).
 
 The reward system uses SQL queries directly against the spreadsheet's
 `cells` table (`/opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db`)
@@ -61,31 +65,34 @@ email was modified.
 
 ## Calibration notes
 
-The difficulty (and the resulting 10–50% band) comes from two sources,
-not from ambiguous instructions:
+The difficulty (and the resulting 10–50% band) comes from genuine task
+structure, not from ambiguous instructions:
 
-- **Precision across two apps.** Each task requires 4–5 exact cells.
+- **Precision across two apps.** Each task requires 5 exact cells.
   Pass = every cell correct (logical AND). The dominant failure mode is
-  that the spreadsheet's multi-row tab-paste occasionally truncates
-  after the first 2–3 rows, leaving the last cells empty — this is what
-  naturally produces a ~40% pass-rate for a clean 5-cell task.
+  the spreadsheet's multi-row entry: a single tab-paste occasionally
+  truncates after the first 2–3 rows, and when the agent then re-types
+  individual cells to recover, Enter-navigation shifts the rows and
+  mislays the last value. Five cells AND-combined with this flaky entry
+  lands each task in the 10–40% range.
 - **Fair value matching.** Derived-cell values (e.g. Day, Topic,
   DocType) are matched **case-insensitively and trimmed**
   (`LOWER(TRIM(raw_value))`) so the agent is not penalised for
   reasonable capitalisation differences (`notes` vs `Notes`). Verbatim
   fields (Sender, Folder) and full-subject fields use exact match.
 
-Per-task calibration:
+Per-task notes:
 
-- **00001 / 00003** — exact match on unambiguous derived tokens (Year,
-  Month, invoice number); stable at 40%.
-- **00002 / 00004 / 00005** — derived cells matched case-insensitively.
-- **00005** additionally requires the **exact full subject** (incl. the
-  `Re:` prefix), which centres it at 25% rather than sitting on the 50%
-  boundary.
-- **00004** sits at the lower edge (10%): the longer multi-word values
-  make the paste-truncation bite more often. It is solvable (≥1/10) and
-  comfortably under the `<50%` requirement.
+- **00001 / 00002** — 5-cell, derived tokens (Year + invoice number /
+  Day + Event); land ~20–40%.
+- **00003** — promoted from 4 cells to 5 (added a Topic cell) because a
+  4-cell version was too easy (~80–100%); the 5th cell brings it into
+  band.
+- **00004 / 00005** — derived cells matched case-insensitively. Their
+  prompts include an explicit, prose recovery tip ("if a cell came out
+  empty, click that exact cell and type only its value — don't use Enter
+  to move between cells") which lifts them off 0%. 00005 also requires
+  the **exact full subject** (incl. the `Re:` prefix).
 
 ## Layout
 
@@ -94,10 +101,10 @@ outlook-excel-tasks/
 ├── README.md                                       (this file)
 ├── tasks.jsonl                                     (5 tasks, runtime artifact)
 └── tasks/
-    ├── 00001-newest-invoice-record/definition.yaml   ← id 00001-newest-invoice-record   (40%)
-    ├── 00002-count-omar-emails/definition.yaml        ← id 00002-david-kim-lunch-record   (40%)
-    ├── 00003-top-sender-formula/definition.yaml       ← id 00003-design-review-record     (40%)
-    ├── 00004-starred-emails-list/definition.yaml      ← id 00004-marketing-campaign-record (10%)
+    ├── 00001-newest-invoice-record/definition.yaml   ← id 00001-newest-invoice-record    (20%)
+    ├── 00002-count-omar-emails/definition.yaml        ← id 00002-david-kim-lunch-record    (40%)
+    ├── 00003-top-sender-formula/definition.yaml       ← id 00003-design-review-record      (12.5%)
+    ├── 00004-starred-emails-list/definition.yaml      ← id 00004-marketing-campaign-record (12.5%)
     └── 00005-inbox-summary-formula/definition.yaml    ← id 00005-incident-retro-record     (25%)
 ```
 
@@ -105,7 +112,7 @@ outlook-excel-tasks/
 
 - Visual mode (`use_hints: false`)
 - Model: `claude-opus-4-8` (Anthropic)
-- `max_turns: 51`, `workers: 1`
+- `max_turns: 51`, `workers: 1–5`
 - Reward source: direct SQL queries against the app SQLite databases
   (avoids the cross-session UUID problem when using HTTP `/api/state`
   diff sources for the spreadsheet)

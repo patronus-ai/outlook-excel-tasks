@@ -1,19 +1,13 @@
 id: 00004-marketing-campaign-record
 start_url: http://cua_email.web
-prompt: "Two-app task: find a specific email in the inbox and record its\nmetadata in the spreadsheet.\n\nStep 1 — Email login:\n\
-  Navigate to http://cua_email.web and log in as \"user_0001\"\n(single User ID input, then \"Create Session\").\n\nStep 2\
-  \ — Find the email:\nIn the Inbox folder, locate the email from \"Jessica Martinez\"\nwith the subject \"Marketing Campaign\
-  \ Proposal\". The sender and\nsubject are visible directly in the inbox row — do NOT open the\nbody.\n\nStep 3 — Record\
-  \ in spreadsheet:\nNavigate to http://cua_spreadsheet.web and enter:\n\n- A1: \"Sender\"   B1: \"Jessica Martinez\"\n- A2:\
-  \ \"Subject\"  B2: the subject text of that email\n- A3: \"Folder\"   B3: \"Inbox\"\n- A4: \"Topic\"  B4: the first word\
-  \ of the subject\n- A5: \"DocType\"  B5: the last word of the subject (the document type)\n\nConstraints:\n- A1-A5 labels\
-  \ exactly as shown. B1=\"Jessica Martinez\", B3=\"Inbox\".\n- Do not modify any emails.\n- Do NOT navigate to /docs, /api/,\
-  \ /openapi, /swagger.\n\n  Efficiency tips (you have limited steps — be fast):\n  - Find the email fast: use the inbox Search\
-  \ box (magnifier icon at the\n    top), type the sender's name, open the matching row. Don't scroll.\n  - Fill ALL spreadsheet\
-  \ cells in ONE action: click cell A1 once, then\n    type the whole 2-column table as a single block using a Tab between\n\
-  \    the two columns and Enter at the end of each row. Example of a single\n    typed value: \"Sender<TAB>...<ENTER>Subject<TAB>...<ENTER>...\"\
-  \ — this\n    populates A1,B1,A2,B2,... in one go. This is far faster and more\n    reliable than editing cells one at a\
-  \ time.\n"
+prompt: |
+  You're keeping a small log of documents people have sent you.
+
+  Open the email app at http://cua_email.web and sign in as user_0001. Find the message from Jessica Martinez with the subject "Marketing Campaign Proposal" — searching the inbox for the sender is the quickest way to find it. The sender and subject show in the inbox row, so there's no need to open it, and leave the emails untouched.
+
+  Then switch to the spreadsheet at http://cua_spreadsheet.web (the "Book 1" workbook is already open) and record it as a two-column table. Down column A put the labels Sender, Subject, Folder, Topic and DocType; in column B the matching values — Jessica Martinez, the subject of that email, the folder Inbox, the first word of the subject (Marketing), and the last word of the subject, which is the document type (Proposal).
+
+  Fill it in one go: click A1 and type all the rows as a single block, with a Tab between the two columns and Enter after each row. Then check the result — if any cell came out empty, click that exact cell and type only its value. Don't use Enter to move from one cell to the next when fixing things, because that shifts the rows down and mislays the last value.
 available_tools:
 - browser_*
 rewards:
