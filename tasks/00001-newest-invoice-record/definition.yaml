@@ -1,147 +1,133 @@
 id: 00001-newest-invoice-record
 start_url: http://cua_email.web
-prompt: |
-  Two-app task: find the invoice email in inbox, then record three
-  pieces of basic metadata in the spreadsheet.
-
-  Step 1 — Email login (required first visit):
-  Navigate to http://cua_email.web. The landing page is a single
-  User ID form. Type "user_0001" and click "Create Session" to
-  enter the inbox.
-
-  Step 2 — Find the invoice in inbox:
-  In the inbox list, locate the email from "Vendor Billing" with
-  subject "Invoice #2024-001". You do NOT need to open the email
-  body — everything you need (sender name and subject) is visible
-  directly in the inbox list row.
-
-  Step 3 — Record in spreadsheet:
-  Navigate to http://cua_spreadsheet.web. The workbook "Book 1"
-  is already open with an empty "Sheet1". Click the cells and
-  type the values, pressing Enter to commit each:
-
-  - A1: "Sender"           B1: "Vendor Billing"
-  - A2: "Subject"          B2: "Invoice #2024-001"
-  - A3: "Folder"           B3: "Inbox"
-  - A4: "Year"             B4: 2024   (extract the year from the
-                                       invoice number "#2024-001")
-
-  Constraints:
-  - Match the exact text for B1, B2, B3 (no extra spaces, no quotes).
-  - B4 must be the integer 2024.
-  - Do not modify any emails (do not flag, archive, delete, open).
-  - Use ONLY the standard email UI. Do not navigate to /docs, /api/,
-    /openapi, /swagger or any developer documentation pages.
-
+prompt: "Two-app task: find the invoice email in inbox, then record three\npieces of basic metadata in the spreadsheet.\n\n\
+  Step 1 — Email login (required first visit):\nNavigate to http://cua_email.web. The landing page is a single\nUser ID form.\
+  \ Type \"user_0001\" and click \"Create Session\" to\nenter the inbox.\n\nStep 2 — Find the invoice in inbox:\nIn the inbox\
+  \ list, locate the email from \"Vendor Billing\" with\nsubject \"Invoice #2024-001\". You do NOT need to open the email\n\
+  body — everything you need (sender name and subject) is visible\ndirectly in the inbox list row.\n\nStep 3 — Record in spreadsheet:\n\
+  Navigate to http://cua_spreadsheet.web. The workbook \"Book 1\"\nis already open with an empty \"Sheet1\". Click the cells\
+  \ and\ntype the values, pressing Enter to commit each:\n\n- A1: \"Sender\"           B1: \"Vendor Billing\"\n- A2: \"Subject\"\
+  \          B2: \"Invoice #2024-001\"\n- A3: \"Folder\"           B3: \"Inbox\"\n- A4: \"Year\"             B4: 2024   (extract\
+  \ the year from the\n                                     invoice number \"#2024-001\")\n- A5: \"Invoice no\"        B5:\
+  \ \"2024-001\"  (the part after the # in\n                                     the invoice number)\n\nConstraints:\n- Match\
+  \ the exact text for B1, B2, B3 (no extra spaces, no quotes).\n- B4 must be the integer 2024.\n- Do not modify any emails\
+  \ (do not flag, archive, delete, open).\n- Use ONLY the standard email UI. Do not navigate to /docs, /api/,\n  /openapi,\
+  \ /swagger or any developer documentation pages.\n\n  Efficiency tips (you have limited steps — be fast):\n  - Find the\
+  \ email fast: use the inbox Search box (magnifier icon at the\n    top), type the sender's name, open the matching row.\
+  \ Don't scroll.\n  - Fill ALL spreadsheet cells in ONE action: click cell A1 once, then\n    type the whole 2-column table\
+  \ as a single block using a Tab between\n    the two columns and Enter at the end of each row. Example of a single\n   \
+  \ typed value: \"Sender<TAB>...<ENTER>Subject<TAB>...<ENTER>...\" — this\n    populates A1,B1,A2,B2,... in one go. This\
+  \ is far faster and more\n    reliable than editing cells one at a time.\n"
 available_tools:
 - browser_*
-
 rewards:
 - name: Took screenshot
   kind: action
   weight: 0.05
   tool: browser_screenshot
-
 - name: A1 label "Sender"
   kind: state
-  weight: 0.10
+  weight: 0.1
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Sender'"
+    query: SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Sender'
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a1
-    path: "$[0].n"
+    path: $[0].n
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
+    expected: '>= 1'
 - name: B1 sender "Vendor Billing"
   kind: state
   weight: 0.25
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=1 AND raw_value='Vendor Billing'"
+    query: SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=1 AND raw_value='Vendor Billing'
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: b1
-    path: "$[0].n"
+    path: $[0].n
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
+    expected: '>= 1'
 - name: A2 label "Subject"
   kind: state
-  weight: 0.10
+  weight: 0.1
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Subject'"
+    query: SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Subject'
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a2
-    path: "$[0].n"
+    path: $[0].n
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
-- name: B2 subject "Invoice #2024-001"
+    expected: '>= 1'
+- name: B2 subject "Invoice
   kind: state
   weight: 0.25
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=1 AND raw_value='Invoice #2024-001'"
+    query: 'SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=1 AND raw_value=''Invoice #2024-001'''
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: b2
-    path: "$[0].n"
+    path: $[0].n
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
+    expected: '>= 1'
 - name: A3 label "Folder" + B3 "Inbox"
   kind: state
-  weight: 0.20
+  weight: 0.2
   source:
-    query: |
-      SELECT
-        SUM(CASE WHEN row_index=2 AND col_index=0 AND raw_value='Folder' THEN 1 ELSE 0 END) AS a3,
-        SUM(CASE WHEN row_index=2 AND col_index=1 AND raw_value='Inbox' THEN 1 ELSE 0 END) AS b3
-      FROM cells
+    query: "SELECT\n  SUM(CASE WHEN row_index=2 AND col_index=0 AND raw_value='Folder' THEN 1 ELSE 0 END) AS a3,\n  SUM(CASE\
+      \ WHEN row_index=2 AND col_index=1 AND raw_value='Inbox' THEN 1 ELSE 0 END) AS b3\nFROM cells\n"
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a3
-    path: "$[0].a3"
+    path: $[0].a3
     operator: NUMERIC_MATCH
-    expected: ">= 1"
+    expected: '>= 1'
   - name: b3
-    path: "$[0].b3"
+    path: $[0].b3
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
+    expected: '>= 1'
 - name: A4="Year" + B4=2024
   kind: state
-  weight: 0.15
+  weight: 0.1
   source:
-    query: |
-      SELECT
-        SUM(CASE WHEN row_index=3 AND col_index=0 AND raw_value='Year' THEN 1 ELSE 0 END) AS a4,
-        SUM(CASE WHEN row_index=3 AND col_index=1 AND (raw_value='2024' OR computed_value='2024') THEN 1 ELSE 0 END) AS b4
-      FROM cells
+    query: "SELECT\n  SUM(CASE WHEN row_index=3 AND col_index=0 AND raw_value='Year' THEN 1 ELSE 0 END) AS a4,\n  SUM(CASE\
+      \ WHEN row_index=3 AND col_index=1 AND (raw_value='2024' OR computed_value='2024') THEN 1 ELSE 0 END) AS b4\nFROM cells\n"
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a4
-    path: "$[0].a4"
+    path: $[0].a4
     operator: NUMERIC_MATCH
-    expected: ">= 1"
+    expected: '>= 1'
   - name: b4
-    path: "$[0].b4"
+    path: $[0].b4
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
+    expected: '>= 1'
+- name: A5="Invoice no" + B5="2024-001"
+  kind: state
+  weight: 0.15
+  source:
+    query: "SELECT\n  SUM(CASE WHEN row_index=4 AND col_index=0 AND raw_value='Invoice no' THEN 1 ELSE 0 END) AS a5,\n  SUM(CASE\
+      \ WHEN row_index=4 AND col_index=1 AND raw_value='2024-001' THEN 1 ELSE 0 END) AS b5\nFROM cells\n"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a5
+    path: $[0].a5
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+  - name: b5
+    path: $[0].b5
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
 - name: Invoice email unchanged
   kind: state
   weight: 0.05
   source:
-    query: "SELECT folderId FROM emails WHERE userId='user_0001' AND fromName='Vendor Billing' AND subject='Invoice #2024-001'"
+    query: 'SELECT folderId FROM emails WHERE userId=''user_0001'' AND fromName=''Vendor Billing'' AND subject=''Invoice #2024-001'''
     db_path: /opt/patronus-gym/apps/cua_email/src/db/seed.sqlite
   assertions:
   - name: still_in_inbox
-    path: "$[0].folderId"
+    path: $[0].folderId
     operator: STRING_EQUALS
     expected: folder_inbox_user_0001
-
 metadata:
   environment: outlook-excel
   difficulty: medium
