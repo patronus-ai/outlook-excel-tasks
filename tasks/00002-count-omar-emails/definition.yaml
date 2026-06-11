@@ -1,105 +1,111 @@
-id: 00002-count-omar-emails
+id: 00002-david-kim-lunch-record
 start_url: http://cua_email.web
 prompt: |
-  Two-app task: count specific emails in the inbox and record the
-  count in the spreadsheet.
+  You're jotting down a few details about a meeting invite in a spreadsheet.
 
-  Step 1 — Email login (required first visit):
-  Navigate to http://cua_email.web and log in as "user_0001"
-  (single User ID input, then click "Create Session").
+  Open the email app at http://cua_email.web and sign in as user_0001. Find the message from David Kim about the team lunch this Friday (subject "Team Lunch - This Friday") — searching the inbox for the sender is the fastest way to find it. The sender and subject are right there in the inbox row, so you don't need to open it, and leave the emails as they are.
 
-  Step 2 — Count emails in inbox from "Omar Hassan":
-  In the inbox list, count how many emails the sender "Omar Hassan"
-  has sent. The sender name is visible directly in the inbox row;
-  you do NOT need to open the email body. Scroll the inbox as
-  needed to see all emails. Count ONLY emails currently in the
-  Inbox folder — ignore any other folder.
+  Then switch to the spreadsheet at http://cua_spreadsheet.web (the "Book 1" workbook is already open) and record it as a two-column table. Down column A put the labels Sender, Subject, Folder, Day and Event; in column B the matching values — David Kim, the subject of that email, the folder Inbox, the weekday mentioned in the subject (Friday), and the kind of event in a single word (Lunch).
 
-  Step 3 — Record in spreadsheet:
-  Navigate to http://cua_spreadsheet.web. Click cells, type values,
-  press Enter to commit:
-
-  - A1: "Sender"        B1: "Omar Hassan"
-  - A2: "Inbox count"   B2: the integer count (just the number)
-
-  Constraints:
-  - Match exact text for A1, A2, B1 (no quotes, no extra spaces).
-  - B2 is the integer count of Omar Hassan's emails in the Inbox.
-  - Do not modify any emails.
-  - Do NOT navigate to /docs, /api/, /openapi, /swagger.
-
+  The quickest way to fill it in is to click A1 and type the whole table in one go, tabbing between the columns and pressing Enter at the end of each row, rather than filling the cells one at a time.
 available_tools:
 - browser_*
-
 rewards:
 - name: Took screenshot
   kind: action
   weight: 0.05
   tool: browser_screenshot
-
-- name: A1 = "Sender"
+- name: A1+B1="David Kim"
   kind: state
-  weight: 0.10
+  weight: 0.2
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=0 AND raw_value='Sender'"
+    query: "SELECT\n  SUM(CASE WHEN row_index=0 AND col_index=0 AND raw_value='Sender' THEN 1 ELSE 0 END) AS a1,\n  SUM(CASE\
+      \ WHEN row_index=0 AND col_index=1 AND raw_value='David Kim' THEN 1 ELSE 0 END) AS b1\nFROM cells\n"
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a1
-    path: "$[0].n"
+    path: $[0].a1
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
-- name: B1 = "Omar Hassan"
-  kind: state
-  weight: 0.20
-  source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=0 AND col_index=1 AND raw_value='Omar Hassan'"
-    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
-  assertions:
+    expected: '>= 1'
   - name: b1
-    path: "$[0].n"
+    path: $[0].b1
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
-- name: A2 = "Inbox count"
+    expected: '>= 1'
+- name: A2+B2 ~Lunch
   kind: state
-  weight: 0.15
+  weight: 0.2
   source:
-    query: "SELECT COUNT(*) AS n FROM cells WHERE row_index=1 AND col_index=0 AND raw_value='Inbox count'"
+    query: "SELECT\n  SUM(CASE WHEN row_index=1 AND col_index=0 AND raw_value='Subject' THEN 1 ELSE 0 END) AS a2,\n  SUM(CASE\
+      \ WHEN row_index=1 AND col_index=1 AND raw_value LIKE '%Lunch%' THEN 1 ELSE 0 END) AS b2\nFROM cells\n"
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
   - name: a2
-    path: "$[0].n"
+    path: $[0].a2
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
-- name: B2 = Omar Hassan inbox count (1-10 plausible)
+    expected: '>= 1'
+  - name: b2
+    path: $[0].b2
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+- name: A3+B3="Inbox"
   kind: state
-  weight: 0.45
+  weight: 0.15
   source:
-    query: |
-      SELECT COUNT(*) AS n FROM cells
-      WHERE row_index=1 AND col_index=1
-        AND CAST(COALESCE(NULLIF(raw_value,''), computed_value) AS INTEGER) BETWEEN 1 AND 10
+    query: "SELECT\n  SUM(CASE WHEN row_index=2 AND col_index=0 AND raw_value='Folder' THEN 1 ELSE 0 END) AS a3,\n  SUM(CASE\
+      \ WHEN row_index=2 AND col_index=1 AND raw_value='Inbox' THEN 1 ELSE 0 END) AS b3\nFROM cells\n"
     db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
   assertions:
-  - name: b2_count
-    path: "$[0].n"
+  - name: a3
+    path: $[0].a3
     operator: NUMERIC_MATCH
-    expected: ">= 1"
-
-- name: Omar's emails in inbox unchanged
+    expected: '>= 1'
+  - name: b3
+    path: $[0].b3
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+- name: A4+B4="Friday"
+  kind: state
+  weight: 0.175
+  source:
+    query: "SELECT\n  SUM(CASE WHEN row_index=3 AND col_index=0 AND raw_value='Day' THEN 1 ELSE 0 END) AS a4,\n  SUM(CASE\
+      \ WHEN row_index=3 AND col_index=1 AND LOWER(TRIM(raw_value))='friday' THEN 1 ELSE 0 END) AS b4\nFROM cells\n"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a4
+    path: $[0].a4
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+  - name: b4
+    path: $[0].b4
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+- name: A5+B5="Lunch"
+  kind: state
+  weight: 0.175
+  source:
+    query: "SELECT\n  SUM(CASE WHEN row_index=4 AND col_index=0 AND raw_value='Event' THEN 1 ELSE 0 END) AS a5,\n  SUM(CASE\
+      \ WHEN row_index=4 AND col_index=1 AND LOWER(TRIM(raw_value))='lunch' THEN 1 ELSE 0 END) AS b5\nFROM cells\n"
+    db_path: /opt/patronus-gym/apps/cua_spreadsheet/src/db/local.db
+  assertions:
+  - name: a5
+    path: $[0].a5
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+  - name: b5
+    path: $[0].b5
+    operator: NUMERIC_MATCH
+    expected: '>= 1'
+- name: David's email unchanged
   kind: state
   weight: 0.05
   source:
-    query: "SELECT COUNT(*) AS n FROM emails WHERE userId='user_0001' AND fromName='Omar Hassan' AND folderId='folder_inbox_user_0001'"
+    query: SELECT folderId FROM emails WHERE userId='user_0001' AND fromName='David Kim' AND subject='Team Lunch - This Friday'
     db_path: /opt/patronus-gym/apps/cua_email/src/db/seed.sqlite
   assertions:
-  - name: omar_inbox_unchanged
-    path: "$[0].n"
-    operator: NUMERIC_MATCH
-    expected: "== 3"
-
+  - name: still_in_inbox
+    path: $[0].folderId
+    operator: STRING_EQUALS
+    expected: folder_inbox_user_0001
 metadata:
   environment: outlook-excel
-  difficulty: medium-hard
+  difficulty: medium
